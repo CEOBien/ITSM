@@ -1,7 +1,9 @@
-import { Entity, Column, Index } from 'typeorm';
+import { Entity, Column, Index, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { BaseEntity } from '../../../common/entities/base.entity';
-import { UserRole, UserStatus } from '../../../common/enums';
+import { UserStatus } from '../../../common/enums';
+import { Organization } from '../../organizations/entities/organization.entity';
+import { UserRole } from '../../roles/entities/user-role.entity';
 
 @Entity('users')
 @Index(['email'], { unique: true })
@@ -31,15 +33,6 @@ export class User extends BaseEntity {
   password: string;
 
   @Column({
-    name: 'role',
-    type: 'enum',
-    enum: UserRole,
-    default: UserRole.END_USER,
-    comment: 'Vai trò trong hệ thống ITSM',
-  })
-  role: UserRole;
-
-  @Column({
     name: 'status',
     type: 'enum',
     enum: UserStatus,
@@ -59,8 +52,15 @@ export class User extends BaseEntity {
   @Column({ name: 'title', nullable: true, comment: 'Chức danh' })
   title?: string;
 
-  @Column({ name: 'department_id', type: 'uuid', nullable: true })
-  departmentId?: string;
+  @Column({ name: 'organization_id', type: 'uuid', nullable: true, comment: 'ID đơn vị tổ chức' })
+  organizationId?: string;
+
+  @ManyToOne(() => Organization, { nullable: true, onDelete: 'SET NULL', eager: false })
+  @JoinColumn({ name: 'organization_id' })
+  organization?: Organization;
+
+  @OneToMany(() => UserRole, (userRole) => userRole.user)
+  userRoles: UserRole[];
 
   @Column({ name: 'location', nullable: true, comment: 'Địa điểm làm việc' })
   location?: string;
@@ -120,12 +120,12 @@ export class User extends BaseEntity {
     return this.status === UserStatus.LOCKED;
   }
 
-  hasRole(...roles: UserRole[]): boolean {
-    return roles.includes(this.role);
+  hasRoleCode(...roleCodes: string[]): boolean {
+    return this.userRoles?.some((ur) => roleCodes.includes(ur.role?.code)) ?? false;
   }
 
   isAdmin(): boolean {
-    return this.role === UserRole.ADMIN || this.role === UserRole.SUPER_ADMIN;
+    return this.hasRoleCode('admin', 'super_admin');
   }
 
   getDisplayName(): string {

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -16,7 +16,7 @@ import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
-import { UserRole } from '../../common/enums';
+
 import { ICurrentUser } from '../../common/interfaces';
 
 @ApiTags('Catalog - Service Catalogue (ITIL)')
@@ -27,7 +27,7 @@ export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: 'Tạo catalog item mới' })
   create(@Body() dto: CreateCatalogItemDto, @CurrentUser() user: ICurrentUser) {
     return this.catalogService.create(dto, user);
@@ -67,7 +67,7 @@ export class CatalogController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: 'Cập nhật catalog item' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -78,7 +78,7 @@ export class CatalogController {
   }
 
   @Post(':id/toggle-active')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: 'Kích hoạt/Tắt dịch vụ' })
   toggleActive(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: ICurrentUser) {
     return this.catalogService.toggleActive(id, user);

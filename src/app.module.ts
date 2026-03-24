@@ -16,6 +16,8 @@ import { AuthModule } from './core/auth/auth.module';
 
 // Business Modules - ITIL v4 Practices
 import { UsersModule } from './modules/users/users.module';
+import { OrganizationsModule } from './modules/organizations/organizations.module';
+import { RolesModule } from './modules/roles/roles.module';
 import { IncidentsModule } from './modules/incidents/incidents.module';
 import { ProblemsModule } from './modules/problems/problems.module';
 import { ChangesModule } from './modules/changes/changes.module';
@@ -80,6 +82,8 @@ import { AppService } from './app.service';
 
     // Business Modules (ITIL v4 Management Practices)
     UsersModule,
+    OrganizationsModule,
+    RolesModule,
     IncidentsModule,
     ProblemsModule,
     ChangesModule,

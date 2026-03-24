@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -18,7 +18,7 @@ import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
-import { UserRole, CiStatus } from '../../common/enums';
+import { CiStatus } from '../../common/enums';
 import { ICurrentUser } from '../../common/interfaces';
 
 @ApiTags('CMDB - Configuration Management Database (ITIL)')
@@ -29,7 +29,7 @@ export class CmdbController {
   constructor(private readonly cmdbService: CmdbService) {}
 
   @Post()
-  @Roles(UserRole.ASSET_MANAGER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('asset_manager', 'admin', 'super_admin')
   @ApiOperation({ summary: 'Thêm Configuration Item (CI) mới vào CMDB' })
   create(@Body() dto: CreateCiDto, @CurrentUser() user: ICurrentUser) {
     return this.cmdbService.create(dto, user);
@@ -74,7 +74,7 @@ export class CmdbController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.ASSET_MANAGER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('asset_manager', 'admin', 'super_admin')
   @ApiOperation({ summary: 'Cập nhật CI' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -85,7 +85,7 @@ export class CmdbController {
   }
 
   @Post(':id/relationships')
-  @Roles(UserRole.ASSET_MANAGER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('asset_manager', 'admin', 'super_admin')
   @ApiOperation({ summary: 'Thêm quan hệ giữa các CI' })
   addRelationship(
     @Param('id', ParseUUIDPipe) id: string,
@@ -96,7 +96,7 @@ export class CmdbController {
   }
 
   @Delete(':id/relationships/:relatedCiId')
-  @Roles(UserRole.ASSET_MANAGER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('asset_manager', 'admin', 'super_admin')
   @ApiOperation({ summary: 'Xóa quan hệ CI' })
   removeRelationship(
     @Param('id', ParseUUIDPipe) id: string,
@@ -107,7 +107,7 @@ export class CmdbController {
   }
 
   @Post(':id/retire')
-  @Roles(UserRole.ASSET_MANAGER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('asset_manager', 'admin', 'super_admin')
   @ApiOperation({ summary: 'Retire (ngừng sử dụng) một CI' })
   retire(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: ICurrentUser) {
     return this.cmdbService.retire(id, user);

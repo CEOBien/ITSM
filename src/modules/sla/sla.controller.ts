@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -16,7 +16,7 @@ import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
-import { UserRole } from '../../common/enums';
+
 import { ICurrentUser } from '../../common/interfaces';
 
 @ApiTags('SLA - Service Level Management (ITIL)')
@@ -27,7 +27,7 @@ export class SlaController {
   constructor(private readonly slaService: SlaService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: 'Tạo SLA/OLA mới' })
   create(@Body() dto: CreateSlaDto, @CurrentUser() user: ICurrentUser) {
     return this.slaService.create(dto, user);
@@ -52,7 +52,7 @@ export class SlaController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: 'Cập nhật SLA' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -63,7 +63,7 @@ export class SlaController {
   }
 
   @Post(':id/toggle-active')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: 'Kích hoạt/Tắt SLA' })
   toggleActive(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: ICurrentUser) {
     return this.slaService.toggleActive(id, user);

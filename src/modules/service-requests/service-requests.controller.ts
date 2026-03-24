@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -22,7 +22,7 @@ import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
-import { UserRole, RequestStatus } from '../../common/enums';
+import { RequestStatus } from '../../common/enums';
 import { ICurrentUser } from '../../common/interfaces';
 
 @ApiTags('Service Requests - Quản lý yêu cầu dịch vụ (ITIL)')
@@ -67,7 +67,7 @@ export class ServiceRequestsController {
   }
 
   @Post(':id/approve')
-  @Roles(UserRole.APPROVER, UserRole.CHANGE_MANAGER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('approver', 'change_manager', 'admin', 'super_admin')
   @ApiOperation({ summary: 'Phê duyệt/từ chối yêu cầu dịch vụ' })
   approve(
     @Param('id', ParseUUIDPipe) id: string,
@@ -78,7 +78,7 @@ export class ServiceRequestsController {
   }
 
   @Post(':id/fulfill')
-  @Roles(UserRole.SERVICE_DESK, UserRole.TECHNICIAN, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('service_desk', 'technician', 'admin', 'super_admin')
   @ApiOperation({ summary: 'Hoàn thành yêu cầu dịch vụ' })
   fulfill(
     @Param('id', ParseUUIDPipe) id: string,

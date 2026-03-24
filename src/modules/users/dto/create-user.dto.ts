@@ -3,14 +3,12 @@ import {
   IsEmail,
   IsNotEmpty,
   IsOptional,
-  IsEnum,
   MinLength,
   IsBoolean,
   IsUUID,
   Matches,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '../../../common/enums';
 
 export class CreateUserDto {
   @ApiPropertyOptional({ description: 'Mã nhân viên', example: 'EMP001' })
@@ -41,11 +39,6 @@ export class CreateUserDto {
   @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   password: string;
 
-  @ApiPropertyOptional({ description: 'Vai trò', enum: UserRole, default: UserRole.END_USER })
-  @IsOptional()
-  @IsEnum(UserRole, { message: 'Vai trò không hợp lệ' })
-  role?: UserRole = UserRole.END_USER;
-
   @ApiPropertyOptional({ description: 'Số điện thoại' })
   @IsOptional()
   @IsString()
@@ -61,10 +54,10 @@ export class CreateUserDto {
   @IsString()
   title?: string;
 
-  @ApiPropertyOptional({ description: 'ID phòng ban' })
+  @ApiPropertyOptional({ description: 'ID đơn vị tổ chức' })
   @IsOptional()
   @IsUUID()
-  departmentId?: string;
+  organizationId?: string;
 
   @ApiPropertyOptional({ description: 'ID quản lý trực tiếp' })
   @IsOptional()
@@ -103,15 +96,10 @@ export class UpdateUserDto {
   @IsString()
   title?: string;
 
-  @ApiPropertyOptional({ enum: UserRole })
-  @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
-
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'ID đơn vị tổ chức' })
   @IsOptional()
   @IsUUID()
-  departmentId?: string;
+  organizationId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

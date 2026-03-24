@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -23,7 +23,7 @@ import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
-import { UserRole, ChangeStatus, ChangeType } from '../../common/enums';
+import { ChangeStatus, ChangeType } from '../../common/enums';
 import { ICurrentUser } from '../../common/interfaces';
 
 @ApiTags('Changes - Quản lý thay đổi (ITIL Change Enablement)')
@@ -74,7 +74,7 @@ export class ChangesController {
   }
 
   @Post(':id/approve')
-  @Roles(UserRole.CHANGE_MANAGER, UserRole.APPROVER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles('change_manager', 'approver', 'super_admin', 'admin')
   @ApiOperation({ summary: 'Phê duyệt hoặc từ chối Change (CAB Decision)' })
   approve(
     @Param('id', ParseUUIDPipe) id: string,
@@ -85,7 +85,7 @@ export class ChangesController {
   }
 
   @Post(':id/implement')
-  @Roles(UserRole.CHANGE_MANAGER, UserRole.TECHNICIAN, UserRole.SUPER_ADMIN)
+  @Roles('change_manager', 'technician', 'super_admin')
   @ApiOperation({ summary: 'Bắt đầu triển khai Change' })
   implement(
     @Param('id', ParseUUIDPipe) id: string,
@@ -96,7 +96,7 @@ export class ChangesController {
   }
 
   @Post(':id/close')
-  @Roles(UserRole.CHANGE_MANAGER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles('change_manager', 'super_admin', 'admin')
   @ApiOperation({ summary: 'Đóng Change (PIR - Post Implementation Review)' })
   close(
     @Param('id', ParseUUIDPipe) id: string,

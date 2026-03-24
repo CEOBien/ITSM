@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User } from '../../modules/users/entities/user.entity';
+import { UserRole } from '../../modules/roles/entities/user-role.entity';
 import { UserStatus } from '../../common/enums';
 import { EVENTS } from '../../common/constants';
 import {
@@ -27,6 +28,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(UserRole)
+    private readonly userRoleRepository: Repository<UserRole>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly eventEmitter: EventEmitter2,
@@ -69,6 +72,8 @@ export class AuthService {
       timestamp: new Date(),
     });
 
+    const { roles, permissions } = await this.loadUserRolesAndPermissions(user.id);
+
     return {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
@@ -78,8 +83,9 @@ export class AuthService {
         email: user.email,
         username: user.username,
         fullName: user.fullName,
-        role: user.role,
-        departmentId: user.departmentId,
+        roles,
+        permissions,
+        organizationId: user.organizationId,
         avatar: user.avatar,
       },
     };
@@ -176,19 +182,45 @@ export class AuthService {
   async getProfile(userId: string) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['department'],
+      relations: ['organization'],
     });
     if (!user) throw new NotFoundException('Tài khoản không tồn tại');
-    return user;
+    const { roles, permissions } = await this.loadUserRolesAndPermissions(userId);
+    return { ...user, roles, permissions };
+  }
+
+  private async loadUserRolesAndPermissions(
+    userId: string,
+  ): Promise<{ roles: string[]; permissions: string[] }> {
+    const userRoles = await this.userRoleRepository.find({
+      where: { userId },
+      relations: ['role', 'role.permissions'],
+    });
+
+    const roles = [...new Set(userRoles.filter((ur) => ur.role?.isActive).map((ur) => ur.role.code))];
+
+    const permSet = new Set<string>();
+    for (const ur of userRoles) {
+      if (ur.role?.isActive) {
+        for (const perm of ur.role.permissions ?? []) {
+          permSet.add(perm.code);
+        }
+      }
+    }
+
+    return { roles, permissions: [...permSet] };
   }
 
   private async generateTokens(user: User) {
+    const { roles, permissions } = await this.loadUserRolesAndPermissions(user.id);
+
     const payload = {
       sub: user.id,
       email: user.email,
       username: user.username,
-      role: user.role,
-      departmentId: user.departmentId,
+      roles,
+      permissions,
+      organizationId: user.organizationId,
     };
 
     const [accessToken, refreshToken] = await Promise.all([

@@ -22,9 +22,11 @@ export interface ICurrentUser {
   email: string;
   username: string;
   fullName: string;
-  role: string;
-  departmentId?: string;
-  permissions?: string[];
+  /** Danh sách mã vai trò (vd: ['admin', 'approver']) */
+  roles: string[];
+  /** Danh sách mã quyền tổng hợp từ tất cả roles (vd: ['incidents:create', 'users:read']) */
+  permissions: string[];
+  organizationId?: string;
 }
 
 export interface IWorkflowEntity {

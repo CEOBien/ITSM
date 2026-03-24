@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -24,7 +24,7 @@ import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
-import { UserRole } from '../../common/enums';
+
 import { ICurrentUser } from '../../common/interfaces';
 
 @ApiTags('Incidents - Quản lý sự cố (ITIL)')
@@ -53,7 +53,7 @@ export class IncidentsController {
   }
 
   @Get('stats')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SERVICE_DESK, UserRole.TECHNICIAN)
+  @Roles('super_admin', 'admin', 'service_desk', 'technician')
   @ApiOperation({ summary: 'Thống kê sự cố theo trạng thái, ưu tiên, SLA' })
   getStats(@Query('startDate') startDate?: string, @Query('endDate') endDate?: string) {
     return this.incidentsService.getStats({
@@ -85,7 +85,7 @@ export class IncidentsController {
   }
 
   @Post(':id/assign')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.SERVICE_DESK)
+  @Roles('super_admin', 'admin', 'service_desk')
   @ApiOperation({ summary: 'Giao sự cố cho kỹ thuật viên/nhóm' })
   assign(
     @Param('id', ParseUUIDPipe) id: string,

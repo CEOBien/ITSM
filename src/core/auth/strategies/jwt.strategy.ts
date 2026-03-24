@@ -11,8 +11,9 @@ export interface JwtPayload {
   sub: string;
   email: string;
   username: string;
-  role: string;
-  departmentId?: string;
+  roles: string[];
+  permissions: string[];
+  organizationId?: string;
   iat?: number;
   exp?: number;
 }
@@ -34,7 +35,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     const user = await this.userRepository.findOne({
       where: { id: payload.sub },
-      select: ['id', 'email', 'username', 'fullName', 'role', 'status', 'departmentId'],
+      select: ['id', 'email', 'username', 'fullName', 'status', 'organizationId'],
     });
 
     if (!user) {
@@ -50,8 +51,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: user.email,
       username: user.username,
       fullName: user.fullName,
-      role: user.role,
-      departmentId: user.departmentId,
+      roles: payload.roles ?? [],
+      permissions: payload.permissions ?? [],
+      organizationId: user.organizationId,
     };
   }
 }

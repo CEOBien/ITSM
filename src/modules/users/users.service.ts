@@ -60,7 +60,9 @@ export class UsersService {
     return savedUser;
   }
 
-  async findAll(query: PaginationDto & { role?: string; status?: string; departmentId?: string }) {
+  async findAll(
+    query: PaginationDto & { status?: string; organizationId?: string; roleCode?: string },
+  ) {
     const { page = 1, limit = 20, search, sortBy = 'createdAt', sortOrder = 'DESC' } = query;
     const skip = (page - 1) * limit;
 
@@ -72,11 +74,10 @@ export class UsersService {
         'user.username',
         'user.email',
         'user.fullName',
-        'user.role',
         'user.status',
         'user.phone',
         'user.title',
-        'user.departmentId',
+        'user.organizationId',
         'user.location',
         'user.isVip',
         'user.lastLoginAt',
@@ -91,18 +92,21 @@ export class UsersService {
       );
     }
 
-    if (query.role) {
-      queryBuilder.andWhere('user.role = :role', { role: query.role });
-    }
-
     if (query.status) {
       queryBuilder.andWhere('user.status = :status', { status: query.status });
     }
 
-    if (query.departmentId) {
-      queryBuilder.andWhere('user.departmentId = :departmentId', {
-        departmentId: query.departmentId,
+    if (query.organizationId) {
+      queryBuilder.andWhere('user.organizationId = :organizationId', {
+        organizationId: query.organizationId,
       });
+    }
+
+    if (query.roleCode) {
+      queryBuilder
+        .innerJoin('user.userRoles', 'ur')
+        .innerJoin('ur.role', 'role')
+        .andWhere('role.code = :roleCode', { roleCode: query.roleCode });
     }
 
     queryBuilder.orderBy(`user.${sortBy}`, sortOrder).skip(skip).take(limit);
@@ -114,29 +118,7 @@ export class UsersService {
   async findOne(id: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id },
-      select: [
-        'id',
-        'employeeId',
-        'username',
-        'email',
-        'fullName',
-        'role',
-        'status',
-        'phone',
-        'mobile',
-        'avatar',
-        'title',
-        'departmentId',
-        'location',
-        'isVip',
-        'notificationEmail',
-        'notificationSms',
-        'lastLoginAt',
-        'createdAt',
-        'updatedAt',
-        'timezone',
-        'language',
-      ],
+      relations: ['organization', 'userRoles', 'userRoles.role'],
     });
 
     if (!user) throw new NotFoundException(`Người dùng #${id} không tồn tại`);
@@ -167,7 +149,8 @@ export class UsersService {
 
   async remove(id: string, _currentUser?: ICurrentUser): Promise<void> {
     const user = await this.findOne(id);
-    if (user.role === 'super_admin') {
+    const isSuperAdmin = user.userRoles?.some((ur) => ur.role?.code === 'super_admin');
+    if (isSuperAdmin) {
       throw new BadRequestException('Không thể xóa tài khoản Super Admin');
     }
     await this.userRepository.softDelete(id);
@@ -185,9 +168,12 @@ export class UsersService {
 
     const byRole = await this.userRepository
       .createQueryBuilder('user')
-      .select('user.role', 'role')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('user.role')
+      .innerJoin('user.userRoles', 'ur')
+      .innerJoin('ur.role', 'role')
+      .select('role.code', 'roleCode')
+      .addSelect('role.name', 'roleName')
+      .addSelect('COUNT(DISTINCT user.id)', 'count')
+      .groupBy('role.code, role.name')
       .getRawMany();
 
     return { total, active, locked, inactive, byRole };

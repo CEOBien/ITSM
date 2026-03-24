@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import { UserRole } from '../../common/enums';
 
 export const ROLES_KEY = 'roles';
-export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
+/** Gắn danh sách mã vai trò yêu cầu lên route. Sử dụng string code (vd: 'admin', 'super_admin'). */
+export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);

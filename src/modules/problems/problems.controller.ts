@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -22,7 +22,7 @@ import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
-import { UserRole, ProblemStatus } from '../../common/enums';
+import { ProblemStatus } from '../../common/enums';
 import { ICurrentUser } from '../../common/interfaces';
 
 @ApiTags('Problems - Quản lý vấn đề (ITIL)')
@@ -33,7 +33,7 @@ export class ProblemsController {
   constructor(private readonly problemsService: ProblemsService) {}
 
   @Post()
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.PROBLEM_MANAGER, UserRole.TECHNICIAN)
+  @Roles('super_admin', 'admin', 'problem_manager', 'technician')
   @ApiOperation({ summary: 'Tạo problem record mới' })
   create(@Body() dto: CreateProblemDto, @CurrentUser() user: ICurrentUser) {
     return this.problemsService.create(dto, user);
@@ -58,7 +58,7 @@ export class ProblemsController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.PROBLEM_MANAGER, UserRole.TECHNICIAN)
+  @Roles('super_admin', 'admin', 'problem_manager', 'technician')
   @ApiOperation({ summary: 'Cập nhật problem record' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -69,7 +69,7 @@ export class ProblemsController {
   }
 
   @Post(':id/known-error')
-  @Roles(UserRole.PROBLEM_MANAGER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles('problem_manager', 'super_admin', 'admin')
   @ApiOperation({ summary: 'Đăng ký vào Known Error Database (KEDB)' })
   registerKnownError(
     @Param('id', ParseUUIDPipe) id: string,
@@ -90,7 +90,7 @@ export class ProblemsController {
   }
 
   @Post(':id/resolve')
-  @Roles(UserRole.PROBLEM_MANAGER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles('problem_manager', 'super_admin', 'admin')
   @ApiOperation({ summary: 'Giải quyết problem' })
   resolve(
     @Param('id', ParseUUIDPipe) id: string,
@@ -101,7 +101,7 @@ export class ProblemsController {
   }
 
   @Post(':id/close')
-  @Roles(UserRole.PROBLEM_MANAGER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles('problem_manager', 'super_admin', 'admin')
   @ApiOperation({ summary: 'Đóng problem record' })
   close(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: ICurrentUser) {
     return this.problemsService.close(id, user);

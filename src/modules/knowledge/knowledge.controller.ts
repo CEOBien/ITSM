@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -16,7 +16,7 @@ import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
-import { UserRole, KnowledgeStatus } from '../../common/enums';
+import { KnowledgeStatus } from '../../common/enums';
 import { ICurrentUser } from '../../common/interfaces';
 
 @ApiTags('Knowledge - Quản lý tri thức (ITIL Knowledge Management)')
@@ -83,14 +83,14 @@ export class KnowledgeController {
   }
 
   @Post(':id/publish')
-  @Roles(UserRole.KNOWLEDGE_MANAGER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('knowledge_manager', 'admin', 'super_admin')
   @ApiOperation({ summary: 'Xuất bản bài viết' })
   publish(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: ICurrentUser) {
     return this.knowledgeService.publish(id, user);
   }
 
   @Post(':id/archive')
-  @Roles(UserRole.KNOWLEDGE_MANAGER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles('knowledge_manager', 'admin', 'super_admin')
   @ApiOperation({ summary: 'Archive bài viết' })
   archive(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: ICurrentUser) {
     return this.knowledgeService.archive(id, user);
