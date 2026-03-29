@@ -4,7 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ActiveRequestsInterceptor } from './core/interceptors/active-requests.interceptor';
+import { LockingGuard } from '@core/guards/locking.guard';
 
 // Config
 import { appConfig, databaseConfig, jwtConfig, redisConfig, mailConfig } from './config';
@@ -18,6 +20,7 @@ import { AuthModule } from './core/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { SystemMonitorModule } from './modules/system-monitor/system-monitor.module';
 import { IncidentsModule } from './modules/incidents/incidents.module';
 import { ProblemsModule } from './modules/problems/problems.module';
 import { ChangesModule } from './modules/changes/changes.module';
@@ -26,6 +29,7 @@ import { CmdbModule } from './modules/cmdb/cmdb.module';
 import { SlaModule } from './modules/sla/sla.module';
 import { KnowledgeModule } from './modules/knowledge/knowledge.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { LockingModule } from './modules/locking/locking.module';
 
 // Shared Services
 import { AuditModule } from './shared/audit/audit.module';
@@ -84,6 +88,7 @@ import { AppService } from './app.service';
     UsersModule,
     OrganizationsModule,
     RolesModule,
+    SystemMonitorModule,
     IncidentsModule,
     ProblemsModule,
     ChangesModule,
@@ -92,6 +97,7 @@ import { AppService } from './app.service';
     SlaModule,
     KnowledgeModule,
     CatalogModule,
+    LockingModule,
 
     // Shared Infrastructure Services
     AuditModule,
@@ -114,6 +120,17 @@ import { AppService } from './app.service';
     {
       provide: APP_INTERCEPTOR,
       useClass: ResponseInterceptor,
+    },
+    // Đếm active requests cho metrics module
+    // useExisting đảm bảo cùng singleton instance với MetricsService
+    {
+      provide: APP_INTERCEPTOR,
+      useExisting: ActiveRequestsInterceptor,
+    },
+    // Global locking guard — chỉ kích hoạt khi route có @Lockable() decorator
+    {
+      provide: APP_GUARD,
+      useClass: LockingGuard,
     },
   ],
 })

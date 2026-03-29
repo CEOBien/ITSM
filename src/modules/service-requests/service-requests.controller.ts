@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   Get,
   Post,
@@ -17,13 +17,15 @@ import {
   ApproveRequestDto,
   FulfillRequestDto,
 } from './dto/create-service-request.dto';
-import { PaginationDto } from '../../common/dto';
-import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
-import { RolesGuard } from '../../core/guards/roles.guard';
-import { Roles } from '../../core/decorators/roles.decorator';
-import { CurrentUser } from '../../core/decorators/current-user.decorator';
-import { RequestStatus } from '../../common/enums';
-import { ICurrentUser } from '../../common/interfaces';
+import { PaginationDto } from '@common/dto';
+import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
+import { RolesGuard } from '@core/guards/roles.guard';
+import { Roles } from '@core/decorators/roles.decorator';
+import { CurrentUser } from '@core/decorators/current-user.decorator';
+import { Lockable } from '@core/decorators/lockable.decorator';
+import { RequestStatus } from '@common/enums';
+import { ICurrentUser } from '@common/interfaces';
+import { ObjectType } from '@modules/locking/enums/locking.enum';
 
 @ApiTags('Service Requests - Quản lý yêu cầu dịch vụ (ITIL)')
 @ApiBearerAuth()
@@ -57,6 +59,7 @@ export class ServiceRequestsController {
   }
 
   @Patch(':id')
+  @Lockable(ObjectType.SERVICE_REQUEST)
   @ApiOperation({ summary: 'Cập nhật yêu cầu dịch vụ' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -67,6 +70,7 @@ export class ServiceRequestsController {
   }
 
   @Post(':id/approve')
+  @Lockable(ObjectType.SERVICE_REQUEST)
   @Roles('approver', 'change_manager', 'admin', 'super_admin')
   @ApiOperation({ summary: 'Phê duyệt/từ chối yêu cầu dịch vụ' })
   approve(

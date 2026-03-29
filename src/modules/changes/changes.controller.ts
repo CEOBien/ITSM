@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   Get,
   Post,
@@ -18,13 +18,15 @@ import {
   ImplementChangeDto,
   CloseChangeDto,
 } from './dto/create-change.dto';
-import { PaginationDto } from '../../common/dto';
-import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
-import { RolesGuard } from '../../core/guards/roles.guard';
-import { Roles } from '../../core/decorators/roles.decorator';
-import { CurrentUser } from '../../core/decorators/current-user.decorator';
-import { ChangeStatus, ChangeType } from '../../common/enums';
-import { ICurrentUser } from '../../common/interfaces';
+import { PaginationDto } from '@common/dto';
+import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
+import { RolesGuard } from '@core/guards/roles.guard';
+import { Roles } from '@core/decorators/roles.decorator';
+import { CurrentUser } from '@core/decorators/current-user.decorator';
+import { Lockable } from '@core/decorators/lockable.decorator';
+import { ChangeStatus, ChangeType } from '@common/enums';
+import { ICurrentUser } from '@common/interfaces';
+import { ObjectType } from '@modules/locking/enums/locking.enum';
 
 @ApiTags('Changes - Quản lý thay đổi (ITIL Change Enablement)')
 @ApiBearerAuth()
@@ -58,6 +60,7 @@ export class ChangesController {
   }
 
   @Patch(':id')
+  @Lockable(ObjectType.CHANGE)
   @ApiOperation({ summary: 'Cập nhật Change Request' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -68,6 +71,7 @@ export class ChangesController {
   }
 
   @Post(':id/submit')
+  @Lockable(ObjectType.CHANGE)
   @ApiOperation({ summary: 'Gửi Change để phê duyệt' })
   submit(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: ICurrentUser) {
     return this.changesService.submit(id, user);

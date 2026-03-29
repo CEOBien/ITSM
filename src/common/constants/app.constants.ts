@@ -25,6 +25,8 @@ export const CACHE_KEYS = {
   KNOWLEDGE_LIST: 'knowledge:list',
   CMDB_CI: (id: string) => `cmdb:ci:${id}`,
   PERMISSIONS: (roleId: string) => `permissions:role:${roleId}`,
+  LOCKING_CONFIG: (objectType: string) => `locking:config:${objectType}`,
+  LOCKING_CONFIG_LIST: 'locking:config:list',
 } as const;
 
 // ============================================================
@@ -102,6 +104,14 @@ export const EVENTS = {
     BREACHED: 'sla.breached',
     PAUSED: 'sla.paused',
     RESUMED: 'sla.resumed',
+  },
+  LOCKING: {
+    CONFIG_CREATED: 'locking.config.created',
+    CONFIG_UPDATED: 'locking.config.updated',
+    CONFIG_DELETED: 'locking.config.deleted',
+    LOCK_ACQUIRED: 'locking.lock.acquired',
+    LOCK_RELEASED: 'locking.lock.released',
+    LOCK_EXPIRED: 'locking.lock.expired',
   },
 } as const;
 

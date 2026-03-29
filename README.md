@@ -1,237 +1,157 @@
-# 🏢 ITSM Platform - ITIL v4 Compliant
+# ITSM Platform — ITIL v4 (NestJS API)
 
-Hệ thống quản lý dịch vụ CNTT (IT Service Management) xây dựng theo chuẩn **ITIL v4** với **NestJS** và **Business Architecture**.
-
----
-
-## 📋 Tính năng chính (ITIL v4 Management Practices)
-
-| Module | ITIL Practice | Mô tả |
-|--------|---------------|-------|
-| 🚨 **Incidents** | Incident Management | Quản lý sự cố, escalation, SLA tracking |
-| 🔍 **Problems** | Problem Management | RCA, Known Error Database (KEDB), 5 Whys |
-| 🔄 **Changes** | Change Enablement | Normal/Standard/Emergency, CAB approval |
-| 📋 **Service Requests** | Service Request Management | Catalog-based requests, approval workflow |
-| 🗄️ **CMDB** | Service Configuration Management | CI lifecycle, relationships, impact analysis |
-| 📊 **SLA** | Service Level Management | SLA/OLA/UC, business hours, escalation rules |
-| 📚 **Knowledge** | Knowledge Management | KB articles, KEDB, workarounds |
-| 🛒 **Catalog** | Service Catalogue Management | Self-service portal catalog |
+Hệ thống quản lý dịch vụ CNTT theo **ITIL v4**: Incident, Problem, Change, Service Request, CMDB, SLA, Knowledge, Catalog; kèm người dùng, tổ chức, vai trò—quyền, giám sát hệ thống và object locking.
 
 ---
 
-## 🏗️ Business Architecture
+## Module nghiệp vụ (ITIL & hạ tầng)
+
+| Module | ITIL / vai trò | Ghi chú |
+|--------|----------------|---------|
+| **incidents** | Incident Management | SLA, escalation, `@Lockable()` |
+| **problems** | Problem Management | KEDB, 5 Whys |
+| **changes** | Change Enablement | CAB, approval JSON |
+| **service-requests** | Service Request Management | Catalog, form data |
+| **cmdb** | Service Configuration Management | CI, quan hệ |
+| **sla** | Service Level Management | Targets JSON, business hours |
+| **knowledge** | Knowledge Management | KB, known error |
+| **catalog** | Service Catalogue | Form động, fulfillment |
+| **users** | — | Tài khoản, profile |
+| **organizations** | — | Cây tổ chức đa cấp |
+| **roles** | — | RBAC: roles, permissions, `user_roles` |
+| **system-monitor** | — | Metrics REST + WebSocket namespace `/system` |
+| **locking** | — | Cấu hình lock theo loại object + `object_locks` |
+
+**Shared:** `audit`, `notification` (EventEmitter), `workflow`.
+
+---
+
+## Cấu trúc mã nguồn
 
 ```
 src/
-├── config/                    # App, DB, JWT, Redis, Mail configs
-├── common/
-│   ├── constants/             # ITIL constants, app constants
-│   ├── enums/                 # Priority, Status, Role enums
-│   ├── interfaces/            # API response, pagination interfaces
-│   ├── entities/              # BaseEntity với audit fields
-│   └── utils/                 # TicketNumber, Date (SLA), Priority Matrix
+├── config/                 # app, database, jwt, redis, mail
+├── database/
+│   ├── migrations/
+│   └── seeds/
+├── common/                 # constants, enums, dto, entities (BaseEntity), utils, interfaces
 ├── core/
-│   ├── auth/                  # JWT + Local auth, strategies
-│   ├── guards/                # JWT, Roles guards
-│   ├── interceptors/          # Response, Logging, Audit
-│   ├── filters/               # Global exception filter
-│   └── decorators/            # Roles, CurrentUser, Public, ApiPaginated
-├── modules/                   # Business Modules (ITIL Practices)
-│   ├── users/                 # User management, RBAC
-│   ├── incidents/             # 🚨 Incident Management
-│   ├── problems/              # 🔍 Problem Management
-│   ├── changes/               # 🔄 Change Enablement
-│   ├── service-requests/      # 📋 Service Request Management
-│   ├── cmdb/                  # 🗄️ Configuration Management DB
-│   ├── sla/                   # 📊 Service Level Management
-│   ├── knowledge/             # 📚 Knowledge Management
-│   └── catalog/               # 🛒 Service Catalogue
-└── shared/
-    ├── audit/                 # Audit logging service
-    ├── notification/          # Event-driven notifications
-    └── workflow/              # Generic state machine engine
+│   ├── auth/               # JWT, login, refresh
+│   ├── guards/             # JWT, Roles, Permissions, Locking
+│   ├── decorators/         # Public, Roles, Permissions, CurrentUser, Lockable, …
+│   ├── interceptors/       # Response, Logging, ActiveRequests (metrics)
+│   └── filters/            # Global exception
+├── modules/                # Domain modules (bảng trên)
+├── shared/                 # audit, notification, workflow
+├── app.module.ts
+└── main.ts
 ```
+
+Path alias (xem `package.json` / `tsconfig`): `@common/*`, `@core/*`, `@modules/*`, `@shared/*`, `@config/*`.
 
 ---
 
-## 🚀 Quick Start
+## Quick start
 
-### Prerequisites
-- Node.js >= 18
-- PostgreSQL >= 14
-- Redis >= 6
+### Yêu cầu
 
-### Installation
+- Node.js ≥ 18  
+- PostgreSQL ≥ 14  
+- Redis ≥ 6 (cache/queue khi bật tính năng liên quan)
+
+### Cài đặt
 
 ```bash
-# Clone và cài đặt dependencies
+cd ITSM
 npm install
-
-# Copy env file
 cp .env.example .env
-# Chỉnh sửa .env theo môi trường của bạn
+# Chỉnh DB, JWT, Redis, CORS (thêm http://localhost:3001 nếu dùng web Next.js local)
+```
 
-# Tạo database
-createdb itsm_db
+Tạo database (ví dụ `itsm_db`), sau đó:
 
-# Chạy migrations (nếu có)
+```bash
 npm run migration:run
-
-# Seed dữ liệu ban đầu
 npm run seed
-
-# Chạy development
 npm run start:dev
 ```
 
-### Default Accounts (sau khi seed)
+### Tài khoản mặc định (sau `seed`)
 
 | Username | Password | Role |
 |----------|----------|------|
-| `superadmin` | `Admin@123456` | Super Admin |
-| `admin` | `Admin@123456` | Admin |
-| `servicedesk` | `Admin@123456` | Service Desk |
-| `technician` | `Admin@123456` | Technician |
-| `change.manager` | `Admin@123456` | Change Manager |
-| `enduser` | `User@123456` | End User |
+| `superadmin` | `Admin@123456` | super_admin |
+| `admin` | `Admin@123456` | admin |
+| `servicedesk` | `Admin@123456` | service_desk |
+| `technician` | `Admin@123456` | technician |
+| `change.manager` | `Admin@123456` | change_manager |
+| `enduser` | `User@123456` | end_user |
 
 ---
 
-## 📖 API Documentation
+## API & tài liệu
 
-Sau khi start server, truy cập Swagger UI tại:
-```
-http://localhost:3000/api/docs
-```
+| Mục | URL / ghi chú |
+|-----|----------------|
+| Global prefix | `api/v1` (biến `API_PREFIX`) |
+| Ví dụ health | `GET http://localhost:3000/api/v1/health` |
+| Root info | `GET http://localhost:3000/api/v1/` |
+| Swagger | `http://localhost:3000/api/docs` — **chỉ khi không phải production** (`APP_ENV`) |
 
----
-
-## 🔑 ITIL v4 Key Concepts Implemented
-
-### Priority Matrix (Impact x Urgency → Priority)
-```
-                 Urgency
-                 Immediate | High  | Medium | Low
-Impact Enterprise  P1        P1      P2      P2
-       Department  P1        P2      P2      P3
-       Group       P2        P3      P3      P4
-       Individual  P3        P4      P4      P5
-```
-
-### SLA Targets (Default)
-| Priority | Response | Resolution |
-|----------|----------|------------|
-| P1 Critical | 15 phút | 4 giờ |
-| P2 High | 30 phút | 8 giờ |
-| P3 Medium | 2 giờ | 1 ngày |
-| P4 Low | 8 giờ | 3 ngày |
-| P5 Planning | 1 ngày | 7 ngày |
-
-### Change Types (ITIL Change Enablement)
-- **Standard**: Pre-approved, low risk, repeatable → Auto-approved
-- **Normal**: Full CAB review required → Submit → Review → CAB Approve → Implement
-- **Emergency**: Urgent fix → Emergency CAB → Implement → Retrospective
-
-### Incident Lifecycle
-```
-New → Assigned → In Progress → [Pending/On Hold] → Resolved → Closed
-                                                  ↓
-                                              Reopened
-```
-
-### Known Error Database (KEDB)
-Problem Management tích hợp KEDB:
-- Đăng ký Known Error với workaround
-- Link từ Incident → Known Error để giải quyết nhanh
-- Tự động gợi ý KB articles khi tạo Incident mới
+Ứng dụng bật **URI versioning** trong `main.ts`; prefix thực tế lấy từ config (mặc định đã gồm `v1`).
 
 ---
 
-## 🔧 Environment Variables
+## Biến môi trường (tóm tắt)
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DB_HOST` | localhost | PostgreSQL host |
-| `DB_DATABASE` | itsm_db | Database name |
-| `JWT_SECRET` | (required) | JWT signing secret |
-| `REDIS_HOST` | localhost | Redis host |
-| `BUSINESS_HOURS_START` | 08:00 | Giờ bắt đầu làm việc |
-| `BUSINESS_HOURS_END` | 17:30 | Giờ kết thúc làm việc |
-| `BUSINESS_TIMEZONE` | Asia/Ho_Chi_Minh | Múi giờ |
+Chi tiết đầy đủ trong [`.env.example`](.env.example).
 
----
-
-## 👥 User Roles & Permissions
-
-| Role | Description |
-|------|-------------|
-| `super_admin` | Toàn quyền hệ thống |
-| `admin` | Quản trị viên IT |
-| `service_desk` | Nhân viên Service Desk (L1) |
-| `technician` | Kỹ thuật viên (L2/L3) |
-| `change_manager` | Change Manager (CAB) |
-| `problem_manager` | Problem Manager |
-| `release_manager` | Release Manager |
-| `asset_manager` | Quản lý tài sản/CMDB |
-| `knowledge_manager` | Quản lý Knowledge Base |
-| `approver` | Người phê duyệt |
-| `end_user` | Người dùng cuối (self-service) |
-| `report_viewer` | Xem báo cáo |
+| Nhóm | Biến tiêu biểu |
+|------|----------------|
+| App | `APP_PORT`, `APP_ENV`, `API_PREFIX`, `CORS_ORIGINS` |
+| DB | `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`, `DB_SYNCHRONIZE` |
+| JWT | `JWT_SECRET`, `JWT_EXPIRES_IN`, `JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRES_IN` |
+| Redis | `REDIS_HOST`, `REDIS_PORT` |
+| ITSM / SLA | `BUSINESS_HOURS_*`, `BUSINESS_TIMEZONE`, prefix ticket (`INCIDENT_PREFIX`, …) |
+| Metrics | `METRICS_RETENTION_DAYS`, `METRICS_CPU_ALERT_THRESHOLD`, `METRICS_MEMORY_ALERT_THRESHOLD` |
 
 ---
 
-## 📊 Event-Driven Architecture
+## Bảo mật & chất lượng
 
-Hệ thống sử dụng NestJS EventEmitter cho kiến trúc event-driven:
-
-```typescript
-// Ví dụ: Khi incident được tạo
-EVENTS.INCIDENT.CREATED   → Notification gửi email/push
-EVENTS.INCIDENT.ESCALATED → Alert manager
-EVENTS.INCIDENT.SLA_BREACHED → Escalation workflow
-EVENTS.CHANGE.SUBMITTED   → Notify CAB members
-EVENTS.USER.PASSWORD_RESET → Send reset email
-```
+- JWT access + refresh; **RBAC** qua Roles và **fine-grained permissions** (`PermissionsGuard`).
+- Helmet, compression, Throttler, CORS có cấu hình.
+- Audit trail (`shared/audit`), soft delete trên BaseEntity, optimistic locking (`version`).
+- **Object locking:** cấu hình theo loại ticket/entity; route có `@Lockable()` + `LockingGuard` toàn cục.
 
 ---
 
-## 🔒 Security Features
+## WebSocket (system metrics)
 
-- **JWT Authentication** với access token + refresh token
-- **RBAC** (Role-Based Access Control) với Guards
-- **Rate Limiting** (Throttler)
-- **Helmet** security headers
-- **Audit Trail** - Ghi log toàn bộ thao tác
-- **Soft Delete** - Không xóa dữ liệu thật
-- **Optimistic Locking** - Version control cho entities
-- **Account Lockout** - Khóa tài khoản sau 5 lần sai mật khẩu
+- Namespace Socket.IO: `/system` (xem `MetricsGateway`).
+- Client cần JWT (auth handshake hoặc header).
+- Sự kiện: `system:metrics`, `system:alert` (ngưỡng CPU/RAM theo env).
+
+REST metrics: controller `system/metrics` (xem `docs/database-schema.md` mục system_metrics).
 
 ---
 
-## 🛠️ Tech Stack
+## Scripts hữu ích
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| NestJS | ^10 | Framework |
-| TypeORM | ^0.3 | ORM |
-| PostgreSQL | ^14 | Database |
-| Redis | ^6 | Cache, Queue |
-| JWT | - | Authentication |
-| Swagger | - | API Documentation |
-| Bull | ^4 | Job Queue |
-| Winston | ^3 | Logging |
-| class-validator | ^0.14 | Validation |
+| Script | Mô tả |
+|--------|--------|
+| `npm run start:dev` | Dev watch |
+| `npm run migration:run` / `migration:revert` | TypeORM migrations |
+| `npm run migration:generate -- -n TênMigration` | Sinh migration từ entity diff |
+| `npm run seed` | Dữ liệu ban đầu |
+| `npm run test` | Jest |
 
 ---
 
-## 📝 Contributing
+## Tài liệu schema
 
-1. Follow ITIL v4 naming conventions
-2. Tất cả ticket types phải có ticket number (VD: INC-20240321-000001)
-3. Mọi entity phải extend BaseEntity
-4. Ghi audit log cho các thao tác quan trọng
-5. Sử dụng EventEmitter cho side effects (notification, audit)
+[docs/database-schema.md](docs/database-schema.md) — bảng, enum, quan hệ, metrics API.
 
 ---
 
-*Built with ❤️ for ITIL v4 compliance | NestJS + TypeORM + PostgreSQL*
+*ITIL v4 | NestJS + TypeORM + PostgreSQL*

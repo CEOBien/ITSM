@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { DataSource, IsNull, DeepPartial } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '../../modules/users/entities/user.entity';
 import { Sla } from '../../modules/sla/entities/sla.entity';
@@ -369,9 +369,10 @@ async function seedUsers(dataSource: DataSource): Promise<void> {
   ];
 
   for (const data of usersData) {
-    let user = await userRepo.findOne({ where: { username: data.username } });
-    if (!user) {
-      user = userRepo.create({
+    let existingUser = await userRepo.findOne({ where: { username: data.username } });
+
+    if (!existingUser) {
+      const userPayload: DeepPartial<User> = {
         username: data.username,
         email: data.email,
         fullName: data.fullName,
@@ -386,19 +387,19 @@ async function seedUsers(dataSource: DataSource): Promise<void> {
         failedLoginAttempts: 0,
         timezone: 'Asia/Ho_Chi_Minh',
         language: 'vi',
-      } as any);
-      user = await userRepo.save(user);
+      };
+      existingUser = await userRepo.save(userRepo.create(userPayload));
       console.log(`  ✓ User created: ${data.username}`);
     }
 
     const role = await roleRepo.findOne({ where: { code: data.roleCode } });
     if (role) {
       const existingAssignment = await userRoleRepo.findOne({
-        where: { userId: user.id, roleId: role.id, organizationId: undefined },
+        where: { userId: existingUser.id, roleId: role.id, organizationId: IsNull() },
       });
       if (!existingAssignment) {
         await userRoleRepo.save(
-          userRoleRepo.create({ userId: user.id, roleId: role.id }),
+          userRoleRepo.create({ userId: existingUser.id, roleId: role.id }),
         );
         console.log(`  ✓ Role "${data.roleCode}" assigned to ${data.username}`);
       }
@@ -486,7 +487,7 @@ async function seedSlas(dataSource: DataSource): Promise<void> {
   for (const slaData of slas) {
     const existing = await slaRepo.findOne({ where: { name: slaData.name } });
     if (!existing) {
-      const sla = slaRepo.create(slaData as any);
+      const sla = slaRepo.create(slaData as DeepPartial<Sla>);
       await slaRepo.save(sla);
       console.log(`  ✓ SLA created: ${slaData.name}`);
     }
@@ -596,7 +597,7 @@ async function seedCatalogItems(dataSource: DataSource): Promise<void> {
         knowledgeArticleIds: [],
         tags: [],
         currency: 'VND',
-      } as any);
+      } as DeepPartial<CatalogItem>);
       await catalogRepo.save(item);
       console.log(`  ✓ Catalog item created: ${itemData.code} - ${itemData.name}`);
     }

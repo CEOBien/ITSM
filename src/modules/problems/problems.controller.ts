@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   Get,
   Post,
@@ -17,13 +17,15 @@ import {
   RegisterKnownErrorDto,
   ResolveProblemDto,
 } from './dto/create-problem.dto';
-import { PaginationDto } from '../../common/dto';
-import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
-import { RolesGuard } from '../../core/guards/roles.guard';
-import { Roles } from '../../core/decorators/roles.decorator';
-import { CurrentUser } from '../../core/decorators/current-user.decorator';
-import { ProblemStatus } from '../../common/enums';
-import { ICurrentUser } from '../../common/interfaces';
+import { PaginationDto } from '@common/dto';
+import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
+import { RolesGuard } from '@core/guards/roles.guard';
+import { Roles } from '@core/decorators/roles.decorator';
+import { CurrentUser } from '@core/decorators/current-user.decorator';
+import { Lockable } from '@core/decorators/lockable.decorator';
+import { ProblemStatus } from '@common/enums';
+import { ICurrentUser } from '@common/interfaces';
+import { ObjectType } from '@modules/locking/enums/locking.enum';
 
 @ApiTags('Problems - Quản lý vấn đề (ITIL)')
 @ApiBearerAuth()
@@ -58,6 +60,7 @@ export class ProblemsController {
   }
 
   @Patch(':id')
+  @Lockable(ObjectType.PROBLEM)
   @Roles('super_admin', 'admin', 'problem_manager', 'technician')
   @ApiOperation({ summary: 'Cập nhật problem record' })
   update(
@@ -69,6 +72,7 @@ export class ProblemsController {
   }
 
   @Post(':id/known-error')
+  @Lockable(ObjectType.PROBLEM)
   @Roles('problem_manager', 'super_admin', 'admin')
   @ApiOperation({ summary: 'Đăng ký vào Known Error Database (KEDB)' })
   registerKnownError(

@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   Get,
   Post,
@@ -20,12 +20,13 @@ import {
   IncidentFilterDto,
 } from './dto/create-incident.dto';
 import { PaginationDto } from '../../common/dto';
-import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
-import { RolesGuard } from '../../core/guards/roles.guard';
-import { Roles } from '../../core/decorators/roles.decorator';
-import { CurrentUser } from '../../core/decorators/current-user.decorator';
-
-import { ICurrentUser } from '../../common/interfaces';
+import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
+import { RolesGuard } from '@core/guards/roles.guard';
+import { Roles } from '@core/decorators/roles.decorator';
+import { CurrentUser } from '@core/decorators/current-user.decorator';
+import { Lockable } from '@core/decorators/lockable.decorator';
+import { ICurrentUser } from '@common/interfaces';
+import { ObjectType } from '@modules/locking/enums/locking.enum';
 
 @ApiTags('Incidents - Quản lý sự cố (ITIL)')
 @ApiBearerAuth()
@@ -75,6 +76,7 @@ export class IncidentsController {
   }
 
   @Patch(':id')
+  @Lockable(ObjectType.INCIDENT)
   @ApiOperation({ summary: 'Cập nhật sự cố' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -85,6 +87,7 @@ export class IncidentsController {
   }
 
   @Post(':id/assign')
+  @Lockable(ObjectType.INCIDENT)
   @Roles('super_admin', 'admin', 'service_desk')
   @ApiOperation({ summary: 'Giao sự cố cho kỹ thuật viên/nhóm' })
   assign(
@@ -96,6 +99,7 @@ export class IncidentsController {
   }
 
   @Post(':id/escalate')
+  @Lockable(ObjectType.INCIDENT)
   @ApiOperation({ summary: 'Leo thang sự cố lên cấp cao hơn' })
   escalate(
     @Param('id', ParseUUIDPipe) id: string,
@@ -106,6 +110,7 @@ export class IncidentsController {
   }
 
   @Post(':id/resolve')
+  @Lockable(ObjectType.INCIDENT)
   @ApiOperation({ summary: 'Giải quyết sự cố' })
   resolve(
     @Param('id', ParseUUIDPipe) id: string,
