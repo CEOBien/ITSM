@@ -3,6 +3,24 @@
  */
 
 // ============================================================
+// SLA mặc định (phút) — dùng khi chưa có SLA entity; DateUtil.calculateSlaDeadline
+// ============================================================
+export const SLA_TIMES = {
+  INCIDENT: {
+    CRITICAL: { response: 15, resolution: 240 },
+    HIGH: { response: 30, resolution: 480 },
+    MEDIUM: { response: 120, resolution: 1440 },
+    LOW: { response: 480, resolution: 4320 },
+    PLANNING: { response: 1440, resolution: 10080 },
+  },
+  SERVICE_REQUEST: {
+    HIGH: { response: 60, resolution: 480 },
+    MEDIUM: { response: 240, resolution: 1440 },
+    LOW: { response: 480, resolution: 4320 },
+  },
+} as const;
+
+// ============================================================
 // Pagination
 // ============================================================
 export const PAGINATION = {

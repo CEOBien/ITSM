@@ -7,19 +7,42 @@ import { Organization, OrgType, OrgLevel } from '../../modules/organizations/ent
 import { Role } from '../../modules/roles/entities/role.entity';
 import { Permission } from '../../modules/roles/entities/permission.entity';
 import { UserRole as UserRoleEntity } from '../../modules/roles/entities/user-role.entity';
-import { UserStatus } from '../../common/enums';
+import { UserStatus, CiStatus, AssignmentPractice } from '../../common/enums';
+import { ConfigurationItem } from '../../modules/cmdb/entities/configuration-item.entity';
+import { AssignmentGroup } from '../../modules/assignments/entities/assignment-group.entity';
+import { SEED_INCIDENT_REFERENCE } from './seed-reference-uuids';
 
 export async function runSeed(dataSource: DataSource): Promise<void> {
   console.log('🌱 Seeding initial ITSM data...');
 
   await seedOrganizations(dataSource);
+  await seedAssignmentGroups(dataSource);
   await seedPermissions(dataSource);
   await seedRoles(dataSource);
   await seedUsers(dataSource);
+  await seedConfigurationItemsForIncidents(dataSource);
   await seedSlas(dataSource);
   await seedCatalogItems(dataSource);
 
   console.log('✅ Seeding completed!');
+  console.log('');
+  console.log('📎 POST /api/v1/incidents — ví dụ body (UUID sau seed):');
+  console.log(
+    JSON.stringify(
+      {
+        title: 'Tiêu đề sự cố',
+        description: 'Mô tả chi tiết',
+        assigneeId: SEED_INCIDENT_REFERENCE.ASSIGNEE_USER_ID,
+        assigneeGroupId: SEED_INCIDENT_REFERENCE.ASSIGNMENT_GROUP_ID,
+        affectedCiIds: [
+          SEED_INCIDENT_REFERENCE.CI_ERP_SERVER_ID,
+          SEED_INCIDENT_REFERENCE.CI_MAIL_SERVICE_ID,
+        ],
+      },
+      null,
+      2,
+    ),
+  );
 }
 
 // ─── Organizations ─────────────────────────────────────────────────────────
@@ -115,6 +138,61 @@ async function seedOrganizations(dataSource: DataSource): Promise<void> {
       console.log(`  ✓ Org L3 created: ${data.code}`);
     }
   }
+
+  // Đơn vị tổ chức gắn với queue (assignment_groups.organization_id) — không dùng org.id làm assigneeGroupId
+  const assignGroupCode = 'NHOM-XL-INC';
+  let assignGroup = await repo.findOne({ where: { code: assignGroupCode } });
+  if (!assignGroup) {
+    const ttHt = await repo.findOne({ where: { code: 'TT-HT' } });
+    assignGroup = repo.create({
+      code: assignGroupCode,
+      name: 'Nhóm xử lý sự cố L1 (Service Desk)',
+      type: OrgType.PHONG,
+      level: OrgLevel.L3,
+      parentId: ttHt?.id,
+      isActive: true,
+      sortOrder: 99,
+    });
+    await repo.save(assignGroup);
+    console.log(`  ✓ Org L3 created: ${assignGroupCode} (liên kết assignment_groups.organization_id)`);
+  }
+}
+
+// ─── Assignment groups (master assigneeGroupId) ────────────────────────────
+
+async function seedAssignmentGroups(dataSource: DataSource): Promise<void> {
+  const repo = dataSource.getRepository(AssignmentGroup);
+  const orgRepo = dataSource.getRepository(Organization);
+  const nhomOrg = await orgRepo.findOne({ where: { code: 'NHOM-XL-INC' } });
+
+  const rows: Array<DeepPartial<AssignmentGroup> & { code: string }> = [
+    {
+      id: SEED_INCIDENT_REFERENCE.ASSIGNMENT_GROUP_ID,
+      code: 'INC-L1-SD',
+      name: 'Nhóm xử lý sự cố L1 (Service Desk)',
+      description: 'Queue tiếp nhận và xử lý sự cố cấp 1',
+      organizationId: nhomOrg?.id,
+      practice: AssignmentPractice.INCIDENTS,
+      isActive: true,
+      sortOrder: 10,
+    },
+    {
+      code: 'INC-L2-APP',
+      name: 'Nhóm Ứng dụng — L2',
+      description: 'Sự cố liên quan ứng dụng nghiệp vụ',
+      organizationId: nhomOrg?.id,
+      practice: AssignmentPractice.INCIDENTS,
+      isActive: true,
+      sortOrder: 20,
+    },
+  ];
+
+  for (const row of rows) {
+    const existing = await repo.findOne({ where: { code: row.code } });
+    if (existing) continue;
+    await repo.save(repo.create(row));
+    console.log(`  ✓ Assignment group created: ${row.code}`);
+  }
 }
 
 // ─── Permissions ───────────────────────────────────────────────────────────
@@ -134,6 +212,7 @@ async function seedPermissions(dataSource: DataSource): Promise<Map<string, Perm
     { resource: 'users', actions: ['create', 'read', 'update', 'delete', 'manage'], group: 'Quản lý Người dùng' },
     { resource: 'roles', actions: ['create', 'read', 'update', 'delete', 'manage'], group: 'Quản lý Vai trò' },
     { resource: 'organizations', actions: ['create', 'read', 'update', 'delete', 'manage'], group: 'Sơ đồ Tổ chức' },
+    { resource: 'assignment_groups', actions: ['read', 'manage'], group: 'Nhóm giao việc' },
     { resource: 'reports', actions: ['read', 'export', 'manage'], group: 'Báo cáo' },
     { resource: 'audit', actions: ['read'], group: 'Nhật ký Kiểm toán' },
     { resource: 'settings', actions: ['read', 'manage'], group: 'Cấu hình Hệ thống' },
@@ -198,7 +277,7 @@ async function seedRoles(dataSource: DataSource): Promise<void> {
         'users:create','users:read','users:update','users:delete','users:manage',
         'roles:read','organizations:read','organizations:create','organizations:update',
         'incidents:manage','problems:manage','changes:manage','service_requests:manage',
-        'cmdb:manage','sla:manage','knowledge:manage','catalog:manage',
+        'cmdb:manage','sla:manage','knowledge:manage','catalog:manage','assignment_groups:manage',
         'reports:read','reports:export','audit:read','settings:manage',
       ]),
     },
@@ -210,6 +289,7 @@ async function seedRoles(dataSource: DataSource): Promise<void> {
       perms: await getPerms([
         'incidents:create','incidents:read','incidents:update','incidents:assign','incidents:close',
         'service_requests:create','service_requests:read','service_requests:update','service_requests:assign',
+        'assignment_groups:read',
         'problems:read',
         'cmdb:read',
         'knowledge:read',
@@ -225,6 +305,7 @@ async function seedRoles(dataSource: DataSource): Promise<void> {
       isSystem: true,
       perms: await getPerms([
         'incidents:read','incidents:update','incidents:close',
+        'assignment_groups:read',
         'problems:read','problems:update',
         'changes:read',
         'cmdb:read','cmdb:update',
@@ -314,6 +395,7 @@ async function seedRoles(dataSource: DataSource): Promise<void> {
       isSystem: true,
       perms: await getPerms([
         'incidents:create','incidents:read',
+        'assignment_groups:read',
         'service_requests:create','service_requests:read',
         'knowledge:read',
         'catalog:read',
@@ -388,6 +470,9 @@ async function seedUsers(dataSource: DataSource): Promise<void> {
         timezone: 'Asia/Ho_Chi_Minh',
         language: 'vi',
       };
+      if (data.username === 'technician') {
+        (userPayload as { id?: string }).id = SEED_INCIDENT_REFERENCE.ASSIGNEE_USER_ID;
+      }
       existingUser = await userRepo.save(userRepo.create(userPayload));
       console.log(`  ✓ User created: ${data.username}`);
     }
@@ -404,6 +489,51 @@ async function seedUsers(dataSource: DataSource): Promise<void> {
         console.log(`  ✓ Role "${data.roleCode}" assigned to ${data.username}`);
       }
     }
+  }
+}
+
+// ─── CMDB demo — CI cho affectedCiIds khi tạo incident ─────────────────────
+
+async function seedConfigurationItemsForIncidents(dataSource: DataSource): Promise<void> {
+  const repo = dataSource.getRepository(ConfigurationItem);
+  const userRepo = dataSource.getRepository(User);
+  const technician = await userRepo.findOne({ where: { username: 'technician' } });
+
+  const items = [
+    {
+      id: SEED_INCIDENT_REFERENCE.CI_ERP_SERVER_ID,
+      ciNumber: 'CI-DEMO-ERP-01',
+      name: 'ERP Application Server',
+      type: 'server',
+      subtype: 'virtual_machine',
+    },
+    {
+      id: SEED_INCIDENT_REFERENCE.CI_MAIL_SERVICE_ID,
+      ciNumber: 'CI-DEMO-MAIL-01',
+      name: 'Dịch vụ Email nội bộ',
+      type: 'service',
+      subtype: 'messaging',
+    },
+  ];
+
+  for (const row of items) {
+    const existing = await repo.findOne({ where: { ciNumber: row.ciNumber } });
+    if (existing) continue;
+
+    const ci = repo.create({
+      id: row.id,
+      ciNumber: row.ciNumber,
+      name: row.name,
+      type: row.type,
+      subtype: row.subtype,
+      status: CiStatus.ACTIVE,
+      relationships: [],
+      serviceIds: [],
+      tags: [],
+      ownerId: technician?.id,
+    });
+    await repo.save(ci);
+    console.log(`  ✓ CI demo created: ${row.ciNumber} (affectedCiIds)`);
   }
 }
 

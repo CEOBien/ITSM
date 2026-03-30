@@ -75,25 +75,6 @@ export enum RequestStatus {
 }
 
 // ============================================================
-// Release Status Lifecycle (ITIL Release Management)
-// ============================================================
-export enum ReleaseStatus {
-  DRAFT = 'draft',
-  PLANNING = 'planning',
-  BUILDING = 'building',
-  TESTING = 'testing',
-  TEST_FAILED = 'test_failed',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-  DEPLOYING = 'deploying',
-  DEPLOYED = 'deployed',
-  FAILED = 'failed',
-  ROLLED_BACK = 'rolled_back',
-  CLOSED = 'closed',
-  CANCELLED = 'cancelled',
-}
-
-// ============================================================
 // SLA Status
 // ============================================================
 export enum SlaStatus {
@@ -129,12 +110,3 @@ export enum KnowledgeStatus {
   DEPRECATED = 'deprecated',
 }
 
-// ============================================================
-// Approval Status
-// ============================================================
-export enum ApprovalStatus {
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-  ABSTAINED = 'abstained',
-}

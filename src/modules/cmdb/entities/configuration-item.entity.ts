@@ -67,7 +67,7 @@ export class ConfigurationItem extends BaseEntity {
   @Column({ name: 'serial_number', nullable: true, comment: 'Serial number' })
   serialNumber?: string;
 
-  @Column({ name: 'version', nullable: true, comment: 'Phiên bản phần mềm/firmware' })
+  @Column({ name: 'ci_version', nullable: true, comment: 'Phiên bản phần mềm/firmware' })
   ciVersion?: string;
 
   @Column({ name: 'ip_address', nullable: true })

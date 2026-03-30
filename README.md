@@ -71,7 +71,9 @@ cp .env.example .env
 Tạo database (ví dụ `itsm_db`), sau đó:
 
 ```bash
+# Database trống: repo chỉ có migration từng phần — chạy migration trước, rồi bù schema từ entity
 npm run migration:run
+npm run schema:sync
 npm run seed
 npm run start:dev
 ```
@@ -141,6 +143,7 @@ REST metrics: controller `system/metrics` (xem `docs/database-schema.md` mục s
 | Script | Mô tả |
 |--------|--------|
 | `npm run start:dev` | Dev watch |
+| `npm run schema:sync` | Đồng bộ schema từ entity → PostgreSQL (dev / DB mới; không dùng trên production) |
 | `npm run migration:run` / `migration:revert` | TypeORM migrations |
 | `npm run migration:generate -- -n TênMigration` | Sinh migration từ entity diff |
 | `npm run seed` | Dữ liệu ban đầu |

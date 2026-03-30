@@ -497,6 +497,7 @@ draft → submitted → under_review → approved → scheduled → in_progress 
 | **Vị trí** | `location`, `building`, `floor`, `room` | — | Vị trí vật lý |
 | **Sở hữu** | `ownerId`, `ownerDepartmentId` | — | Chủ sở hữu |
 | **Kỹ thuật** | `manufacturer`, `model`, `serialNumber` | — | Nhà sản xuất, model, S/N |
+| | `ciVersion` | `ci_version` | Phiên bản phần mềm/firmware (khác cột `version` optimistic lock của BaseEntity) |
 | | `ipAddress`, `macAddress`, `hostname` | — | Mạng |
 | | `operatingSystem`, `osVersion` | — | Hệ điều hành |
 | | `cpu`, `ramGb`, `storageGb` | — | Thông số phần cứng |

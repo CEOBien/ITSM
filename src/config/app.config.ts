@@ -8,7 +8,11 @@ export default registerAs('app', () => ({
   url: process.env.APP_URL || 'http://localhost:3000',
   apiPrefix: process.env.API_PREFIX || 'api/v1',
   apiVersion: process.env.API_VERSION || '1',
-  corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:3000').split(','),
+  corsOrigins: (process.env.CORS_ORIGINS ||
+    'http://localhost:3000,http://localhost:3001,http://localhost:4200')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean),
   throttle: {
     ttl: parseInt(process.env.THROTTLE_TTL, 10) || 60,
     limit: parseInt(process.env.THROTTLE_LIMIT, 10) || 100,

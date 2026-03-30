@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Between, IsNull } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Incident } from './entities/incident.entity';
+import { AssignmentGroup } from '../assignments/entities/assignment-group.entity';
 import {
   CreateIncidentDto,
   UpdateIncidentDto,
@@ -12,7 +13,7 @@ import {
   IncidentFilterDto,
 } from './dto/create-incident.dto';
 import { PaginationDto } from '../../common/dto';
-import { IncidentStatus, Priority, SlaStatus } from '../../common/enums';
+import { IncidentStatus, Priority, SlaStatus, AssignmentPractice } from '../../common/enums';
 import { EVENTS } from '../../common/constants';
 import { TicketNumberUtil, PaginationUtil, DateUtil } from '../../common/utils';
 import { ICurrentUser } from '../../common/interfaces';
@@ -23,10 +24,25 @@ export class IncidentsService {
   constructor(
     @InjectRepository(Incident)
     private readonly incidentRepository: Repository<Incident>,
+    @InjectRepository(AssignmentGroup)
+    private readonly assignmentGroupRepository: Repository<AssignmentGroup>,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  private async ensureIncidentAssignmentGroup(id: string): Promise<void> {
+    const group = await this.assignmentGroupRepository.findOne({
+      where: { id, isActive: true, practice: AssignmentPractice.INCIDENTS },
+    });
+    if (!group) {
+      throw new BadRequestException(
+        'Nhóm giao việc không tồn tại, đã vô hiệu hoặc không dùng cho sự cố (incidents)',
+      );
+    }
+  }
+
   async create(dto: CreateIncidentDto, currentUser: ICurrentUser): Promise<Incident> {
+    await this.ensureIncidentAssignmentGroup(dto.assigneeGroupId);
+
     const incidentNumber = TicketNumberUtil.incident();
 
     // Tính priority từ impact x urgency matrix
@@ -152,6 +168,10 @@ export class IncidentsService {
       (dto as any).priority = PRIORITY_MATRIX[impact][urgency];
     }
 
+    if (dto.assigneeGroupId) {
+      await this.ensureIncidentAssignmentGroup(dto.assigneeGroupId);
+    }
+
     Object.assign(incident, dto);
     incident.updatedBy = currentUser.id;
 
@@ -170,8 +190,15 @@ export class IncidentsService {
   async assign(id: string, dto: AssignIncidentDto, currentUser: ICurrentUser): Promise<Incident> {
     const incident = await this.findOne(id);
 
-    incident.assigneeId = dto.assigneeId;
-    incident.assigneeGroupId = dto.assigneeGroupId;
+    if (dto.assigneeId !== undefined) {
+      incident.assigneeId = dto.assigneeId;
+    }
+    if (dto.assigneeGroupId !== undefined) {
+      if (dto.assigneeGroupId) {
+        await this.ensureIncidentAssignmentGroup(dto.assigneeGroupId);
+      }
+      incident.assigneeGroupId = dto.assigneeGroupId;
+    }
 
     if (incident.status === IncidentStatus.NEW) {
       incident.status = IncidentStatus.ASSIGNED;
@@ -186,7 +213,8 @@ export class IncidentsService {
 
     this.eventEmitter.emit(EVENTS.INCIDENT.ASSIGNED, {
       incidentId: id,
-      assigneeId: dto.assigneeId,
+      assigneeId: updated.assigneeId,
+      assigneeGroupId: updated.assigneeGroupId,
       assignedBy: currentUser.id,
       note: dto.note,
     });

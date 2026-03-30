@@ -30,6 +30,7 @@ import { SlaModule } from './modules/sla/sla.module';
 import { KnowledgeModule } from './modules/knowledge/knowledge.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { LockingModule } from './modules/locking/locking.module';
+import { AssignmentsModule } from './modules/assignments/assignments.module';
 
 // Shared Services
 import { AuditModule } from './shared/audit/audit.module';
@@ -97,6 +98,7 @@ import { AppService } from './app.service';
     SlaModule,
     KnowledgeModule,
     CatalogModule,
+    AssignmentsModule,
     LockingModule,
 
     // Shared Infrastructure Services

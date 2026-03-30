@@ -7,9 +7,31 @@ import {
   IsArray,
   IsBoolean,
   MaxLength,
+  ArrayMinSize,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Priority, Impact, Urgency, IncidentStatus } from '../../../common/enums';
+import { SEED_INCIDENT_REFERENCE } from '../../../database/seeds/seed-reference-uuids';
+
+/** Client/Swagger hay gửi "" thay vì omit field — @IsOptional không bỏ qua chuỗi rỗng */
+function EmptyToUndefined() {
+  return Transform(({ value }: { value: unknown }) =>
+    value === '' || value === null ? undefined : value,
+  );
+}
+
+/** Tags: tránh [""] fail @IsString each */
+function StringArrayOrUndefined() {
+  return Transform(({ value }: { value: unknown }) => {
+    if (value === '' || value === null || value === undefined) return undefined;
+    if (!Array.isArray(value)) return value;
+    const next = value
+      .map((v) => (typeof v === 'string' ? v.trim() : v))
+      .filter((v) => v !== '');
+    return next.length ? next : undefined;
+  });
+}
 
 export class CreateIncidentDto {
   @ApiProperty({ description: 'Tiêu đề sự cố', example: 'Không thể đăng nhập hệ thống ERP' })
@@ -55,21 +77,37 @@ export class CreateIncidentDto {
   @IsString()
   service?: string;
 
-  @ApiPropertyOptional({ description: 'ID người được giao' })
-  @IsOptional()
-  @IsUUID()
-  assigneeId?: string;
+  @ApiProperty({
+    description:
+      'UUID user được giao xử lý (phải tồn tại). Sau `npm run seed`: user `technician` dùng UUID cố định.',
+    example: SEED_INCIDENT_REFERENCE.ASSIGNEE_USER_ID,
+  })
+  @IsUUID('4', { message: 'assigneeId phải là UUID v4 hợp lệ' })
+  @IsNotEmpty({ message: 'Phải chọn người xử lý (assigneeId)' })
+  assigneeId: string;
 
-  @ApiPropertyOptional({ description: 'ID nhóm xử lý' })
-  @IsOptional()
-  @IsUUID()
-  assigneeGroupId?: string;
+  @ApiProperty({
+    description:
+      'UUID nhóm giao việc (`assignment_groups`). Lấy từ GET /assignment-groups hoặc sau seed: `INC-L1-SD`.',
+    example: SEED_INCIDENT_REFERENCE.ASSIGNMENT_GROUP_ID,
+  })
+  @IsUUID('4', { message: 'assigneeGroupId phải là UUID v4 hợp lệ' })
+  @IsNotEmpty({ message: 'Phải chọn nhóm xử lý (assigneeGroupId)' })
+  assigneeGroupId: string;
 
-  @ApiPropertyOptional({ description: 'ID CI bị ảnh hưởng' })
-  @IsOptional()
+  @ApiProperty({
+    description:
+      'Danh sách CI trong CMDB bị ảnh hưởng (ít nhất 1). Sau seed: CI-DEMO-ERP-01, CI-DEMO-MAIL-01.',
+    type: [String],
+    example: [
+      SEED_INCIDENT_REFERENCE.CI_ERP_SERVER_ID,
+      SEED_INCIDENT_REFERENCE.CI_MAIL_SERVICE_ID,
+    ],
+  })
   @IsArray()
-  @IsUUID('4', { each: true })
-  affectedCiIds?: string[];
+  @ArrayMinSize(1, { message: 'Cần ít nhất một CI trong affectedCiIds' })
+  @IsUUID('4', { each: true, message: 'Mỗi phần tử affectedCiIds phải là UUID v4' })
+  affectedCiIds: string[];
 
   @ApiPropertyOptional({
     description: 'Nguồn tiếp nhận',
@@ -86,6 +124,7 @@ export class CreateIncidentDto {
   isMajorIncident?: boolean;
 
   @ApiPropertyOptional({ description: 'Tags', example: ['erp', 'login'] })
+  @StringArrayOrUndefined()
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
@@ -134,13 +173,15 @@ export class UpdateIncidentDto {
   service?: string;
 
   @ApiPropertyOptional()
+  @EmptyToUndefined()
   @IsOptional()
-  @IsUUID()
+  @IsUUID('4')
   assigneeId?: string;
 
   @ApiPropertyOptional()
+  @EmptyToUndefined()
   @IsOptional()
-  @IsUUID()
+  @IsUUID('4')
   assigneeGroupId?: string;
 
   @ApiPropertyOptional()
@@ -174,20 +215,23 @@ export class ResolveIncidentDto {
   closureCode?: string;
 
   @ApiPropertyOptional({ description: 'ID bài viết KB áp dụng' })
+  @EmptyToUndefined()
   @IsOptional()
-  @IsUUID()
+  @IsUUID('4')
   knowledgeArticleId?: string;
 }
 
 export class AssignIncidentDto {
   @ApiPropertyOptional({ description: 'ID người được giao' })
+  @EmptyToUndefined()
   @IsOptional()
-  @IsUUID()
+  @IsUUID('4')
   assigneeId?: string;
 
   @ApiPropertyOptional({ description: 'ID nhóm được giao' })
+  @EmptyToUndefined()
   @IsOptional()
-  @IsUUID()
+  @IsUUID('4')
   assigneeGroupId?: string;
 
   @ApiPropertyOptional({ description: 'Ghi chú khi giao' })
@@ -206,8 +250,9 @@ export class EscalateIncidentDto {
   reason: string;
 
   @ApiPropertyOptional({ description: 'ID người tiếp nhận sau leo thang' })
+  @EmptyToUndefined()
   @IsOptional()
-  @IsUUID()
+  @IsUUID('4')
   escalateTo?: string;
 }
 
@@ -236,13 +281,15 @@ export class IncidentFilterDto {
   priority?: Priority | Priority[];
 
   @ApiPropertyOptional()
+  @EmptyToUndefined()
   @IsOptional()
-  @IsUUID()
+  @IsUUID('4')
   assigneeId?: string;
 
   @ApiPropertyOptional()
+  @EmptyToUndefined()
   @IsOptional()
-  @IsUUID()
+  @IsUUID('4')
   reporterId?: string;
 
   @ApiPropertyOptional()

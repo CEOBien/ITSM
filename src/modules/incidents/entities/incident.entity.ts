@@ -84,7 +84,12 @@ export class Incident extends BaseEntity {
   @Column({ name: 'assignee_id', type: 'uuid', nullable: true, comment: 'Người được giao xử lý' })
   assigneeId?: string;
 
-  @Column({ name: 'assignee_group_id', type: 'uuid', nullable: true, comment: 'Nhóm xử lý' })
+  @Column({
+    name: 'assignee_group_id',
+    type: 'uuid',
+    nullable: true,
+    comment: 'FK → assignment_groups (nhóm giao việc / queue)',
+  })
   assigneeGroupId?: string;
 
   @Column({ name: 'escalation_level', default: 1, comment: 'Cấp độ leo thang (L1/L2/L3/L4)' })

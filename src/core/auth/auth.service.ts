@@ -36,11 +36,18 @@ export class AuthService {
   ) {}
 
   async validateUser(username: string, password: string): Promise<User | null> {
-    const user = await this.userRepository.findOne({
-      where: [{ username }, { email: username }],
-    });
+    // password có select: false trên entity — phải addSelect thì bcrypt mới có hash
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('(user.username = :login OR user.email = :login)', { login: username })
+      .getOne();
 
     if (!user || !user.isActive()) {
+      return null;
+    }
+
+    if (!password || !user.password) {
       return null;
     }
 
@@ -113,7 +120,11 @@ export class AuthService {
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.id = :userId', { userId })
+      .getOne();
     if (!user) throw new NotFoundException('Tài khoản không tồn tại');
 
     const isValid = await bcrypt.compare(dto.oldPassword, user.password);
@@ -158,9 +169,12 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto) {
-    const user = await this.userRepository.findOne({
-      where: { passwordResetToken: dto.token },
-    });
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.passwordResetToken')
+      .addSelect('user.passwordResetExpiry')
+      .where('user.passwordResetToken = :token', { token: dto.token })
+      .getOne();
 
     if (!user || !user.passwordResetExpiry || user.passwordResetExpiry < new Date()) {
       throw new BadRequestException('Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn');

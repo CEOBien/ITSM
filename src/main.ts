@@ -21,8 +21,12 @@ async function bootstrap() {
   const port = configService.get<number>('app.port');
   const corsOrigins = configService.get<string[]>('app.corsOrigins');
 
-  // Security
-  app.use(helmet.default());
+  // Security — CORP cross-origin để SPA (port khác, ví dụ Next :3001) gọi API được
+  app.use(
+    helmet.default({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   app.use(compression());
 
   // CORS
